@@ -1,24 +1,17 @@
-// db.js
 require('dotenv').config();
 const sql = require('mssql');
 
 const config = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER,    
-  database: process.env.DB_NAME,
+  server: process.env.DB_SERVER,
+  database: process.env.DB_NAME, 
   options: {
-    encrypt: true,                  // Azure SQL exige TLS
-    trustServerCertificate: false   // Pon true sólo si tu servidor usa certificado autofirmado
-  },
-  pool: {
-    max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000
+    encrypt: true,
+    trustServerCertificate: true // o true si estás local
   }
 };
 
-// Construimos el pool
 const poolPromise = new sql.ConnectionPool(config)
   .connect()
   .then(pool => {
@@ -26,12 +19,9 @@ const poolPromise = new sql.ConnectionPool(config)
     return pool;
   })
   .catch(err => {
-    console.error('❌ Falló conexión a Azure SQL:', err);
-    // Si falla, abortamos el proceso para no seguir con pool undefined
-    process.exit(1);
+    console.error('❌ Conexión fallida:', err);
   });
 
 module.exports = {
-  sql,
-  poolPromise
+  sql, poolPromise
 };
