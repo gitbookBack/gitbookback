@@ -4,7 +4,6 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "build": "echo \"No hay paso de build para el front-end\"",
     "test": "echo \"Sin pruebas, continuando...\" && exit 0"
   },
   "keywords": [],
