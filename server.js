@@ -2,74 +2,64 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+const helmet  = require('helmet');
+const morgan  = require('morgan');
 const path    = require('path');
+const auth    = require('./middleware/auth');
 
 const app = express();
 
 // 1) Middlewares globales
+app.use(helmet());
+app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
-// permite leer bodies de tipo application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }));
-app.use('/api/pedidos/:id/factura.pdf', express.static(path.join(__dirname, 'uploads/invoices')));
-// 2) Servir tus vistas y assets estáticos
-//    Asumiendo que:
-//      /public
-//        /views/Admin.html
-//        /css/Admin.css
-//        /js/Admin.js
-app.use('/', express.static(path.join(__dirname, 'public')));
 
-// 3) Routers relacionales
-const categoriasRouter    = require('./routes/categorias');
-const autoresRouter       = require('./routes/autores');
-const librosRouter        = require('./routes/libros');
-const resenasRouter       = require('./routes/resenas');
-const carritoRouter       = require('./routes/carrito');
-const authRouter          = require('./routes/auth');
-const pedidosRouter = require('./routes/pedidos');
-const direccionesRouter   = require('./routes/direcciones');
-const metodospagoRouter   = require('./routes/metodospago');
-// const pedidosRouter       = require('./routes/pedidos'); // Si decides usar pedidos
+// 2) Servir estáticos
+app.use(express.static(path.join(__dirname, 'public')));
 
-// 4) Routers NoSQL / sociales
-const commentsRouter      = require('./routes/comments');
-const reactionsRouter     = require('./routes/reactions');
-const socialRouter        = require('./routes/social');
-const newsletterRouter    = require('./routes/newsletter');
-const searchHistoryRouter = require('./routes/searchHistory');
-const notificationsRouter = require('./routes/notifications');
-const analyticsRouter     = require('./routes/analytics');
+// 3) Facturas (protegido)
+app.get('/api/pedidos/:id/factura.pdf', auth, (req, res) => {
+  const file = path.join(__dirname, 'uploads', 'invoices', `${req.params.id}.pdf`);
+  res.sendFile(file, err => {
+    if (err) return res.status(404).json({ error: 'Factura no encontrada' });
+  });
+});
 
-// 5) Montar rutas API bajo /api
-app.use('/api/categorias',     categoriasRouter);
-app.use('/api/autores',        autoresRouter);
-app.use('/api/libros',         librosRouter);
-app.use('/api/resenas',        resenasRouter);
-app.use('/api/carrito',        carritoRouter);
-app.use('/api/auth',           authRouter);
-app.use('/api/pedidos',       pedidosRouter);
-app.use('/api/direcciones',   direccionesRouter);
-app.use('/api/metodospago',   metodospagoRouter);
-app.use('/api/comments',       commentsRouter);
-app.use('/api/reactions',      reactionsRouter);
-app.use('/api/social',         socialRouter);
-app.use('/api/newsletter',     newsletterRouter);
-app.use('/api/search-history', searchHistoryRouter);
-app.use('/api/notifications',  notificationsRouter);
-app.use('/api/analytics',      analyticsRouter);
+// 4) Routers “core” (SQL)
+app.use('/api/auth',         require('./routes/auth'));
+app.use('/api/categorias',   require('./routes/categorias'));
+app.use('/api/autores',      require('./routes/autores'));
+app.use('/api/libros',       require('./routes/libros'));
+
+app.use('/api/reviews',      require('./routes/reviews'));
+app.use('/api/carrito',      require('./routes/carrito'));
+app.use('/api/pedidos',      require('./routes/pedidos'));
+app.use('/api/direcciones',  require('./routes/direcciones'));
+app.use('/api/metodospago',  require('./routes/metodospago'));
+
+// 5) Routers “social” (Mongo)
+app.use('/api/comments',       require('./routes/comments'));
+app.use('/api/favorites',      require('./routes/favorites'));
+app.use('/api/shares',         require('./routes/shares'));
+app.use('/api/reactions',      require('./routes/reactions'));
+app.use('/api/social',         require('./routes/social'));
+app.use('/api/newsletter',     require('./routes/newsletter'));
+app.use('/api/search-history', require('./routes/searchHistory'));
+app.use('/api/notifications',  require('./routes/notifications'));
 
 // 6) Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'up', timestamp: new Date().toISOString() });
 });
 
-// 7) Fallo 404 para rutas no definidas
+// 7) 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
-// 8) Handler global de errores
+// 8) Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Error interno del servidor' });

@@ -2,6 +2,7 @@
 const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
+const fs      = require('fs/promises');
 const { poolPromise, sql } = require('../db');
 const { subirImagen }     = require('../upload');
 
@@ -130,7 +131,8 @@ router.post('/', upload.single('portada'), async (req, res) => {
       cantidadActual, cantidadMinima
     } = req.body;
 
-    const urlImagen = await subirImagen(req.file.path);
+    const urlImagen = await subirImagen('portadas-gitbook', req.file.path);
+    await fs.unlink(req.file.path);
     const pool = await poolPromise;
 
     const ins = await pool.request()
@@ -189,7 +191,8 @@ router.put('/:id', upload.single('portada'), async (req, res) => {
     const pool = await poolPromise;
     let urlImagen;
     if (req.file) {
-      urlImagen = await subirImagen(req.file.path);
+      urlImagen = await subirImagen('portadas-gitbook', req.file.path);
+      await fs.unlink(req.file.path);
     }
 
     // actualizo Libros
