@@ -1,5 +1,12 @@
 require('dotenv').config();
 const sql = require('mssql');
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ Mongoose conectado a MongoDB'))
+.catch(err => console.error('❌ Error al conectar con MongoDB:', err));
 
 const config = {
   user: process.env.DB_USER,

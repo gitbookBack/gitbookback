@@ -2,12 +2,13 @@
 const express = require('express');
 const router  = express.Router();
 const { poolPromise, sql } = require('../db');
+const auth    = require('../middleware/auth'); 
 
 // Helper para extraer userID (reemplaza con tu middleware real si lo tienes)
 function getUserId(req) {
-  return req.user?.id || 1;
+  return req.user.id;
 }
-
+router.use(auth);
 // Helper: obtiene o crea un carrito "Abierto" para el usuario
 async function getOrCreateCart(pool, usuarioID) {
   // 1) Intento leer carrito abierto

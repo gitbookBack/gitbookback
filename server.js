@@ -6,7 +6,7 @@ const helmet  = require('helmet');
 const morgan  = require('morgan');
 const path    = require('path');
 const auth    = require('./middleware/auth');
-
+const mongoose = require('./mongo');
 const app = express();
 
 // 1) Middlewares globales
@@ -19,13 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 // 2) Servir estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 3) Facturas (protegido)
-app.get('/api/pedidos/:id/factura.pdf', auth, (req, res) => {
-  const file = path.join(__dirname, 'uploads', 'invoices', `${req.params.id}.pdf`);
-  res.sendFile(file, err => {
-    if (err) return res.status(404).json({ error: 'Factura no encontrada' });
-  });
-});
+
 
 // 4) Routers “core” (SQL)
 app.use('/api/auth',         require('./routes/auth'));
@@ -44,7 +38,7 @@ app.use('/api/comments',       require('./routes/comments'));
 app.use('/api/favorites',      require('./routes/favorites'));
 app.use('/api/shares',         require('./routes/shares'));
 app.use('/api/reactions',      require('./routes/reactions'));
-app.use('/api/social',         require('./routes/social'));
+app.use('/api/comunidad',      require('./routes/comunidad'));
 app.use('/api/newsletter',     require('./routes/newsletter'));
 app.use('/api/search-history', require('./routes/searchHistory'));
 app.use('/api/notifications',  require('./routes/notifications'));

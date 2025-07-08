@@ -70,7 +70,7 @@ router.get('/:bookId', async (req, res) => {
     const { recordset } = await pool.request()
       .input('LibroID', sql.Int, bookIdNum)
       .query(`
-        SELECT cm.MongoID, u.NombreUsuario AS usuario
+        SELECT cm.MongoID, u.NombreUsuario AS usuario,u.AvatarUrl AS avatarUrl
           FROM ComentariosMeta cm
           JOIN Usuarios u ON u.UsuarioID = cm.UsuarioID
          WHERE cm.LibroID = @LibroID;
@@ -86,6 +86,7 @@ router.get('/:bookId', async (req, res) => {
       return {
         id:               row.MongoID,
         usuario:          row.usuario,
+         avatarUrl:        row.avatarUrl, 
         rating:           doc.rating        ?? 0,
         text:             doc.text          ?? '',
         likesCount:       Array.isArray(doc.likes)    ? doc.likes.length    : 0,

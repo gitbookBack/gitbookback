@@ -2,12 +2,16 @@
 
 const express     = require('express');
 const router      = express.Router();
+const auth        = require('../middleware/auth');
 const { poolPromise, sql } = require('../db');
 const PDFDocument = require('pdfkit');
 const { randomUUID } = require('crypto');
+
+router.use(auth);
+
 // 0) Helper para extraer userID (o 1 si no hay auth real aún)
 function getUserId(req) {
-  return req.user?.id || 1;
+  return req.user.id;
 }
 
 // 1) Helper para obtener o crear un carrito "Abierto"
@@ -193,9 +197,37 @@ router.post('/', async (req, res) => {
   }
 });
 
+// ─── GET /api/pedidos
+// Lista todos los pedidos del usuario logueado
+router.get('/', async (req, res) => {
+  try {
+    const usuarioID = req.user.id;
+    const pool      = await poolPromise;
+    const { recordset } = await pool.request()
+      .input('UsuarioID', sql.Int, usuarioID)
+      .query(`
+        SELECT PedidoID, FechaPedido, Total
+          FROM dbo.Pedidos
+         WHERE UsuarioID = @UsuarioID
+         ORDER BY FechaPedido DESC
+      `);
+
+    const pedidos = recordset.map(r => ({
+      pedidoID: r.PedidoID,
+      fecha:     r.FechaPedido,         // en el front lo formateas
+      total:     Number(r.Total)
+    }));
+
+    res.json(pedidos);
+  } catch (err) {
+    console.error('GET /api/pedidos error:', err);
+    res.status(500).json({ error: 'Error al listar pedidos' });
+  }
+});
+
 // GET /api/pedidos/:id/factura.pdf
 // → genera el PDF al vuelo con pdfkit
-router.get('/:id/factura.pdf', async (req, res) => {
+ router.get('/:id/factura.pdf', auth, async (req, res) => {
   const pedidoID = parseInt(req.params.id, 10);
   if (isNaN(pedidoID)) {
     return res.status(400).send('ID inválido');
